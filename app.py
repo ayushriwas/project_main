@@ -47,5 +47,9 @@ def index():
             return render_template('result.html', image_path=web_image_path,
                                    tesseract_text=tesseract_text) #easyocr_text=easyocr_text)
     return render_template('index.html')
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+
