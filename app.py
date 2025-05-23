@@ -48,4 +48,4 @@ def index():
                                    tesseract_text=tesseract_text) #easyocr_text=easyocr_text)
     return render_template('index.html')
 if __name__ == '__main__':
-    app.run(host='192.168.56.10', port=5000, debug=True)
+    app.run(debug=True)
