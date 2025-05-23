@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, jsonify
 import cv2
 import pytesseract
-#import easyocr
+#import easyocrr
 import numpy as np
 import os
 from werkzeug.utils import secure_filename
