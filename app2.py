@@ -1,7 +1,6 @@
 import warnings
 warnings.filterwarnings("ignore", message=".*pin_memory.*")
 
-
 from flask import Flask, request, render_template, jsonify
 import cv2
 import pytesseract
