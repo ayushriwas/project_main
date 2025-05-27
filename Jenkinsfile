@@ -15,42 +15,18 @@ pipeline {
             }
         }
 
-        stage('Terraform Init') {
             steps {
-                echo '🛠️ Initializing Terraform...'
-                dir("${TF_DIR}") {
-                    sh 'terraform init'
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('terraform') {
+                        echo '🌍 Initializing Terraform...'
+                        sh 'terraform init'
+
+                        echo '🚀 Applying Terraform...'
+                        sh 'terraform apply -auto-approve'
+                    }
                 }
             }
         }
-
-        stage('Terraform Validate') {
-            steps {
-                echo '🔍 Validating Terraform configuration...'
-                dir("${TF_DIR}") {
-                    sh 'terraform validate'
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                echo '📋 Planning infrastructure changes...'
-                dir("${TF_DIR}") {
-                    sh 'terraform plan -out=tfplan'
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                echo '🚀 Applying infrastructure...'
-                dir("${TF_DIR}") {
-                    sh 'terraform apply -auto-approve tfplan'
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
