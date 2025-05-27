@@ -32,3 +32,16 @@ EXPOSE 5000
 
 # Run the Flask app
 CMD ["python", "app.py"]
+
+FROM jenkins/inbound-agent:latest
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y wget unzip && \
+    wget https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip && \
+    unzip terraform_1.7.5_linux_amd64.zip && \
+    mv terraform /usr/local/bin/ && \
+    terraform --version
+
+USER jenkins
