@@ -3,3 +3,4 @@ ami_id       = "ami-0c02fb55956c7d316"  # Ubuntu 22.04 LTS in us-east-1
 instance_type = "t2.micro"
 key_name     = "your-keypair-name"       # Replace with your actual key pair name
 docker_image = "ayush5626/ocr_web"
+vpc_id = "vpc-03f5627c16d0f039a"

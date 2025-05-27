@@ -25,3 +25,7 @@ variable "docker_image" {
   default     = "ayush5626/ocr_web"
 }
 
+variable "vpc_id" {
+  description = "The VPC ID for the security group"
+  type        = vpc-03f5627c16d0f039a
+}

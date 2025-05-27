@@ -26,6 +26,7 @@ resource "aws_instance" "ocr_server" {
 resource "aws_security_group" "ocr_sg" {
   name        = "ocr-sg"
   description = "Allow SSH and web traffic"
+  vpc_id      = var.vpc_id 
   ingress = [
     {
       description = "SSH"
