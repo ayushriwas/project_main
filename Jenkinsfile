@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'ayush5626/ocr_web'
         CONTAINER_NAME = 'ocr'
-        AWS_DEFAULT_REGION = 'us-east-1' // Change this if your resources are in a different region
+        AWS_DEFAULT_REGION = 'us-east-1' // Set your AWS region
     }
 
     stages {
@@ -12,20 +12,6 @@ pipeline {
             steps {
                 echo '📥 Checking out code...'
                 git 'https://github.com/ayushriwas/project_main.git'
-            }
-        }
-
-        stage('Terraform Init & Apply') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    dir('terraform') {
-                        echo '🌍 Initializing Terraform...'
-                        sh 'terraform init'
-
-                        echo '🚀 Applying Terraform...'
-                        sh 'terraform apply -auto-approve'
-                    }
-                }
             }
         }
 
@@ -44,6 +30,20 @@ pipeline {
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${DOCKER_IMAGE}
                     """
+                }
+            }
+        }
+
+        stage('Terraform Init & Apply') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('terraform') {
+                        echo '🌍 Initializing Terraform...'
+                        sh 'terraform init'
+
+                        echo '🚀 Applying Terraform...'
+                        sh 'terraform apply -auto-approve'
+                    }
                 }
             }
         }
@@ -74,3 +74,4 @@ pipeline {
         }
     }
 }
+
