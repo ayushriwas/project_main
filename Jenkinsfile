@@ -49,11 +49,13 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
-                echo '🚀 Running Docker container...'
-                sh """
+		withCredentials([usernamePassword(credentialsId: ''aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    echo '🚀 Running Docker container...'
+                    sh """
 			docker rm -f ocr || true
-			docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${DOCKER_IMAGE}
-		"""
+			docker run -d --name ${CONTAINER_NAME} -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -p 5000:5000 ${DOCKER_IMAGE}
+		    """
+		}
             }
         }
     }
