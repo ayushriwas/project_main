@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'ayush5626/ocr_web'
+        DOCKER_IMAGE = 'ayush5626/ocr_web'
         CONTAINER_NAME = 'ocr'
     }
 
@@ -30,15 +30,15 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${DOCKER_IMAGE} .
-                """
+                echo '🐳 Building Docker image...'
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    echo '📤 Pushing Docker image...'
                     sh """
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${DOCKER_IMAGE}
@@ -49,7 +49,8 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
-                sh "docker run -d -p 5000:5000 ${DOCKER_IMAGE}"
+                echo '🚀 Running Docker container...'
+                sh "docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${DOCKER_IMAGE}"
             }
         }
     }
