@@ -50,7 +50,10 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 echo '🚀 Running Docker container...'
-                sh "docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${DOCKER_IMAGE}"
+                sh """
+			docker rm -f ocr || true
+			docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${DOCKER_IMAGE}
+		"""
             }
         }
     }
