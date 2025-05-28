@@ -21,7 +21,7 @@ from PIL import Image
 app = Flask(__name__)
 
 # === AWS S3 CONFIGURATION ===
-S3_BUCKET = 'ocr-images-bucket-xyz1234'  # replace with actual name after Terraform apply
+S3_BUCKET = 'ocr-images-bucket-e6a2ac1e'  # replace with actual name after Terraform apply
 S3_REGION = 'us-east-1'
 s3 = boto3.client('s3', region_name=S3_REGION)
 
