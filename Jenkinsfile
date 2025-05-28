@@ -28,34 +28,39 @@ pipeline {
             }
         }
 
+stages {
         stage('Build Docker Image') {
             steps {
-                echo '🐳 Building Docker image...'
-                sh """
-	            docker build -t ${IMAGE_NAME} .
-		    docker push ${IMAGE_NAME}
-		"""
+                script {
+                    docker.build("${DOCKER_IMAGE}")
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
+                    """
+                }
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                echo '🚀 Running Docker container...'
-                sh """
-                    docker rm -f ${CONTAINER_NAME} || true
-                    docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${IMAGE_NAME}
-                """
+                sh "docker run -d -p 5000:5000 ${DOCKER_IMAGE}"
             }
         }
     }
 
     post {
-        always {
-            echo '✅ Done.'
+        success {
+            echo '✅ Deployment succeeded!'
         }
         failure {
             echo '❌ Build failed!'
         }
     }
 }
-
