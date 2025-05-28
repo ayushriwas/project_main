@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'ayush5626/ocr_web'
         CONTAINER_NAME = 'ocr'
+        AWS_DEFAULT_REGION = 'us-east-1' // Change this if your resources are in a different region
     }
 
     stages {
@@ -54,14 +55,15 @@ pipeline {
                     sh """
                         docker rm -f ${CONTAINER_NAME} || true
                         docker run -d --name ${CONTAINER_NAME} \
-                        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-                        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-                        -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
-                        -p 5000:5000 ${DOCKER_IMAGE}
+                          -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                          -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                          -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+                          -p 5000:5000 ${DOCKER_IMAGE}
                     """
                 }
             }
         }
+    }
 
     post {
         success {
@@ -71,5 +73,4 @@ pipeline {
             echo '❌ Build failed!'
         }
     }
-}
 }
