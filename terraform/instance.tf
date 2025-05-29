@@ -1,3 +1,7 @@
+provider "aws" {
+  region = var.aws_region
+}
+
 resource "aws_iam_role" "ocr_ec2_role" {
   name = "ocr-ec2-role"
   assume_role_policy = jsonencode({
