@@ -47,7 +47,7 @@ pipeline {
 
                             # Import Security Group
                             if ! terraform state list | grep -q aws_security_group.ocr_sg; then
-                              terraform import aws_security_group.ocr_sg sg-04c957d06e8c48484
+                              terraform import aws_security_group.ocr_sg sg-05e5f2bf0260d2f9d
                             fi
                         '''
                     }
