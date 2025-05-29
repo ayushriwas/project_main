@@ -28,12 +28,26 @@ pipeline {
                         echo '🌍 Initializing Terraform...'
                         sh 'terraform init'
 
-                        echo '📦 Importing existing S3 bucket if not already managed...'
+                        echo '📦 Importing existing resources if not already managed...'
                         sh '''
+                            # Import S3 bucket
                             if ! terraform state list | grep -q aws_s3_bucket.ocr_bucket; then
                               terraform import aws_s3_bucket.ocr_bucket ocr-images-bucket-e6a2ac1e
-                            else
-                              echo "✅ Bucket already imported in state."
+                            fi
+
+                            # Import IAM Role
+                            if ! terraform state list | grep -q aws_iam_role.ocr_ec2_role; then
+                              terraform import aws_iam_role.ocr_ec2_role ocr-ec2-role
+                            fi
+
+                            # Import IAM Policy
+                            if ! terraform state list | grep -q aws_iam_policy.ocr_s3_policy; then
+                              terraform import aws_iam_policy.ocr_s3_policy arn:aws:iam::416586670456:policy/ocr-s3-access-policy
+                            fi
+
+                            # Import Security Group
+                            if ! terraform state list | grep -q aws_security_group.ocr_sg; then
+                              terraform import aws_security_group.ocr_sg sg-04c957d06e8c48484
                             fi
                         '''
                     }
