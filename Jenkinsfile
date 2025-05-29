@@ -19,6 +19,7 @@ pipeline {
             steps {
                 echo '🐳 Building Docker image...'
                 sh """
+			docker rm -f ${CONTAINER_NAME}
 			docker rmi ${DOCKER_IMAGE}
 			docker build -t ${DOCKER_IMAGE} .
 		"""
