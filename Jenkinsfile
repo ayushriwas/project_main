@@ -6,6 +6,7 @@ pipeline {
         CONTAINER_NAME = 'ocr'
         AWS_DEFAULT_REGION = 'us-east-1' // Set your AWS region
     }
+
     stages {
         stage('Cleanup') {
             steps {
@@ -20,13 +21,30 @@ pipeline {
             }
         }
 
-        stage('Terraform Init & Apply') {
+        stage('Terraform Init & Import') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     dir('terraform') {
                         echo '🌍 Initializing Terraform...'
                         sh 'terraform init'
 
+                        echo '📦 Importing existing S3 bucket if not already managed...'
+                        sh '''
+                            if ! terraform state list | grep -q aws_s3_bucket.ocr_bucket; then
+                              terraform import aws_s3_bucket.ocr_bucket ocr-images-bucket-e6a2ac1e
+                            else
+                              echo "✅ Bucket already imported in state."
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('terraform') {
                         echo '🚀 Applying Terraform...'
                         sh 'terraform apply -auto-approve'
                     }
@@ -60,4 +78,3 @@ pipeline {
         }
     }
 }
-
