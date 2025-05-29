@@ -18,7 +18,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
-                sh "docker build -t ${DOCKER_IMAGE} ."
+                sh """
+			docker rmi ${DOCKER_IMAGE}
+			docker build -t ${DOCKER_IMAGE} .
+		"""
             }
         }
 
