@@ -11,6 +11,7 @@ resource "aws_instance" "ocr_server" {
               #!/bin/bash
               apt-get update -y
               apt-get install -y docker.io
+              systemctl enable docker
               systemctl start docker
               docker pull ${var.docker_image}
               docker run -d -p 5000:5000 \
