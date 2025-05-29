@@ -6,6 +6,12 @@ pipeline {
         CONTAINER_NAME = 'ocr'
         AWS_DEFAULT_REGION = 'us-east-1' // Set your AWS region
     }
+    stages {
+        stage('Cleanup') {
+            steps {
+                cleanWs()
+            }
+        }
 
     stages {
         stage('Checkout') {
