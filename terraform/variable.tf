@@ -5,8 +5,7 @@ variable "aws_region" {
 
 variable "ami_id" {
   description = "Amazon Machine Image ID"
-  # Ubuntu 22.04 in us-east-1 (update for your region)
-  default     = "ami-0c02fb55956c7d316"
+  default     = "ami-04b70fa74e45c3917"  # Debian-based AMI
 }
 
 variable "instance_type" {
@@ -21,11 +20,10 @@ variable "key_name" {
 
 variable "docker_image" {
   description = "Docker image to run"
-  type        = string
   default     = "ayush5626/ocr_web"
 }
 
 variable "vpc_id" {
-  description = "The VPC ID for the security group"
+  description = "VPC ID where the instance will be launched"
   type        = string
 }
