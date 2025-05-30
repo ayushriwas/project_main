@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'ayush5626/ocr_web'
         CONTAINER_NAME = 'ocr'
         AWS_DEFAULT_REGION = 'us-east-1'
-        S3_BUCKET = 'your-s3-bucket-name' // 🔁 Change this to your actual bucket
+        S3_BUCKET = 'ocr-images-bucket-e6a2ac1e' // 🔁 Change this to your actual bucket
         S3_KEY = 'lambda/ocr_lambda.zip'
     }
 
