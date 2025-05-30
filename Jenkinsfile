@@ -2,9 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'ayush5626/ocr_web'
-        CONTAINER_NAME = 'ocr'
-        AWS_DEFAULT_REGION = 'us-east-1' // Set your AWS region
+        AWS_REGION = 'us-east-1'  // Change if needed
     }
 
     stages {
@@ -25,103 +23,37 @@ pipeline {
 
                         cp lambda_function.py ocr_utils.py build/
                         cd build
-                        zip -r ../ocr_lambda.zip .
+                        zip -r ocr_lambda.zip .
                     '''
                 }
             }
         }
 
-        stage('Terraform Init & Import') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    dir('terraform') {
-                        echo '🌍 Initializing Terraform...'
-                        echo '⚙️ Setting up Terraform plugin cache...'
-                        sh '''
-                            mkdir -p ~/.terraform.d/plugin-cache
-                            echo 'plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"' > ~/.terraformrc
-                        '''
-                        sh 'terraform init -upgrade=false'
-
-                        echo '📦 Importing existing resources if not already managed...'
-                        sh '''
-                            # Import S3 bucket
-                            if ! terraform state list | grep -q aws_s3_bucket.ocr_bucket; then
-                              terraform import aws_s3_bucket.ocr_bucket ocr-images-bucket-e6a2ac1e
-                            fi
-
-                            # Import IAM Role
-                            if ! terraform state list | grep -q aws_iam_role.ocr_ec2_role; then
-                              terraform import aws_iam_role.ocr_ec2_role ocr-ec2-role
-                            fi
-
-                            # Import IAM Policy
-                            if ! terraform state list | grep -q aws_iam_policy.ocr_s3_policy; then
-                              terraform import aws_iam_policy.ocr_s3_policy arn:aws:iam::416586670456:policy/ocr-s3-access-policy
-                            fi
-
-                            # Import IAM Instance Profile
-                            if ! terraform state list | grep -q aws_iam_instance_profile.ocr_instance_profile; then
-                              terraform import aws_iam_instance_profile.ocr_instance_profile ocr-instance-profile
-                            fi
-
-                            # Import Security Group
-                            if ! terraform state list | grep -q aws_security_group.ocr_sg; then
-                              terraform import aws_security_group.ocr_sg sg-05e5f2bf0260d2f9d
-                            fi
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    dir('terraform') {
-                        echo '🚀 Applying Terraform...'
-                        sh 'terraform apply -auto-approve'
-                    }
+        stage('Terraform Init & Apply') {
+            dir('terraform') {
+                steps {
+                    echo '🌍 Running Terraform...'
+                    sh '''
+                        terraform init
+                        terraform apply -auto-approve
+                    '''
                 }
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    echo '🚀 Running Docker container...'
-                    sh """
-                        docker rm -f ${CONTAINER_NAME} || true
-                        docker run -d --name ${CONTAINER_NAME} \
-                          -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-                          -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-                          -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
-                          -p 5000:5000 ${DOCKER_IMAGE}
-                    """
-                }
-            }
-        }
-
-        stage('Build & Deploy Lambda') {
-            steps {
-                dir('lambda') {
-                    sh '''
-                        aws lambda update-function-code \
-                          --function-name ocr_lambda \
-                          --zip-file fileb://ocr_lambda.zip \
-                          --region $AWS_DEFAULT_REGION
-                    '''
-                }
+                echo '🐳 Docker container should be running on EC2 if Terraform succeeded.'
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Deployment succeeded!'
-        }
         failure {
             echo '❌ Build failed!'
+        }
+        success {
+            echo '✅ Build and deploy successful!'
         }
     }
 }
