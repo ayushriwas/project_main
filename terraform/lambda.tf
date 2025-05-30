@@ -20,12 +20,18 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_exec" {
 
 resource "aws_lambda_function" "ocr_lambda" {
   function_name = "ocr_lambda"
-  role          = aws_iam_role.lambda_exec_role.arn
-  runtime       = "python3.9"
+  role          = aws_iam_role.ocr_lambda_exec.arn
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/build/ocr_lambda.zip"
-  timeout       = 30
-  source_code_hash = filebase64sha256("${path.module}/build/ocr_lambda.zip")
+  runtime       = "python3.8"
+
+  filename         = "${path.module}/../lambda/ocr_lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../lambda/ocr_lambda.zip")
+
+  environment {
+    variables = {
+      AWS_DEFAULT_REGION = var.aws_region
+    }
+  }
 }
 
 resource "aws_s3_bucket_notification" "lambda_trigger" {
