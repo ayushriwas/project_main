@@ -26,12 +26,14 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     dir('terraform') {
                         echo '🌍 Initializing Terraform...'
+                        sh 'terraform init'
                         echo '⚙️ Setting up Terraform plugin cache...'
-                        sh '''
-                            mkdir -p ~/.terraform.d/plugin-cache
-                            echo 'plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"' > ~/.terraformrc
-                        '''
-                        sh 'terraform init -upgrade=false'
+			                        sh '''
+
+   mkdir -p ~/.terraform.d/plugin-cache
+                               echo 'plugin_cache_dir =
+"$HOME/.terraform.d/plugin-cache"' > ~/.terraformrc
+
 
                         echo '📦 Importing existing resources if not already managed...'
                         sh '''
