@@ -18,6 +18,7 @@ pipeline {
                 dir('lambda') {
                     echo '📦 Building Lambda deployment package...'
                     sh '''
+                        set -e
                         mkdir -p build/python
                         pip install -r requirements.txt -t build/python
 
@@ -30,10 +31,11 @@ pipeline {
         }
 
         stage('Terraform Init & Apply') {
-            dir('terraform') {
-                steps {
+            steps {
+                dir('terraform') {
                     echo '🌍 Running Terraform...'
                     sh '''
+                        set -e
                         terraform init
                         terraform apply -auto-approve
                     '''
