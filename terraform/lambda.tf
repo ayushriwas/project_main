@@ -1,11 +1,16 @@
+provider "aws" {
+  region = var.aws_region
+}
+
 resource "aws_lambda_function" "ocr_lambda" {
   function_name = "ocr_lambda"
   role          = aws_iam_role.ocr_lambda_exec.arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.8"
 
-  filename         = "${path.module}/../lambda/build/ocr_lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../lambda/build/ocr_lambda.zip")
+  s3_bucket         = var.lambda_s3_bucket
+  s3_key            = var.lambda_s3_key
+  source_code_hash  = filebase64sha256("${path.module}/../lambda/build/ocr_lambda.zip")
 
   environment {
     variables = {

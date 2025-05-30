@@ -28,3 +28,11 @@ variable "vpc_id" {
   description = "VPC ID where the instance will be launched"
   type        = string
 }
+
+variable "lambda_s3_bucket" {
+  description = "The S3 bucket containing the Lambda deployment package"
+}
+
+variable "lambda_s3_key" {
+  description = "The S3 key for the Lambda deployment package"
+}
