@@ -137,6 +137,7 @@ resource "aws_iam_policy" "terraform_lambda_admin_policy" {
         "lambda:CreateFunction",
         "lambda:UpdateFunctionCode",
         "lambda:GetFunction",
+        "lambda:ListVersionsByFunction",
         "lambda:DeleteFunction",
         "iam:PassRole",
         "logs:CreateLogGroup",
