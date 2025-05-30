@@ -33,38 +33,6 @@ resource "aws_iam_role" "ocr_lambda_exec" {
   })
 }
 
-# IAM Policy for Lambda to access S3 and CloudWatch
-resource "aws_iam_policy" "ocr_lambda_policy" {
-  name        = "ocr-lambda-access-policy"
-  description = "Allows Lambda to read from S3 and write to CloudWatch"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "s3:GetObject",
-          "s3:ListBucket"
-        ],
-        Resource = [
-          "arn:aws:s3:::ocr-images-bucket-*",
-          "arn:aws:s3:::ocr-images-bucket-*/*"
-        ]
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        Resource = "*"
-      }
-    ]
-  })
-}
-
 # Attach IAM Policy to Lambda Role
 resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
   role       = aws_iam_role.ocr_lambda_exec.name
