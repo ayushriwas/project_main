@@ -1,22 +1,37 @@
-# lambda_function.py
-
+import os
 import boto3
-from ocr_utils import perform_ocr
+import tempfile
+from ocr_utils import process_image_and_extract_text
 
 def lambda_handler(event, context):
-    s3 = boto3.client('s3')
+    # Get bucket and key from the S3 event
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    key = event['Records'][0]['s3']['object']['key']
 
-    for record in event['Records']:
-        bucket = record['s3']['bucket']['name']
-        key = record['s3']['object']['key']
+    # Use custom environment variable (not reserved one)
+    region = os.getenv("APP_REGION", "us-east-1")
 
-        response = s3.get_object(Bucket=bucket, Key=key)
-        image_bytes = response['Body'].read()
+    # Initialize S3 client
+    s3 = boto3.client('s3', region_name=region)
 
-        text = perform_ocr(image_bytes)
+    try:
+        # Download the image from S3 to a temp file
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            s3.download_file(bucket, key, tmp_file.name)
 
-        # Optional: Save OCR result to S3
-        result_key = key.rsplit('.', 1)[0] + '.txt'
-        s3.put_object(Bucket=bucket, Key=f'ocr-results/{result_key}', Body=text)
+            # Run OCR on the image using shared utils
+            extracted_text = process_image_and_extract_text(tmp_file.name)
 
-    return {'statusCode': 200, 'body': 'OCR processed successfully'}
+        # Optionally log or return the result
+        print(f"OCR result for {key}:\n{extracted_text}")
+        return {
+            'statusCode': 200,
+            'body': f'Text extracted successfully from {key}.'
+        }
+
+    except Exception as e:
+        print(f"Error processing file {key} from bucket {bucket}: {e}")
+        return {
+            'statusCode': 500,
+            'body': f'Error processing image: {str(e)}'
+        }

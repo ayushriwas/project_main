@@ -118,7 +118,7 @@ resource "aws_lambda_function" "ocr_lambda" {
 
   environment {
     variables = {
-      AWS_DEFAULT_REGION = var.aws_region
+     APP_REGION  = var.aws_region
     }
   }
 }
