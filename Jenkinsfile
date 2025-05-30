@@ -93,6 +93,27 @@ pipeline {
         }
     }
 
+        stage('Build & Deploy Lambda') {
+            steps {
+                dir('lambda') {
+                    sh '''
+                        mkdir -p build/python
+                        pip install -r requirements.txt -t build/python
+
+                        cp lambda_function.py ocr_utils.py build/
+                        cd build
+                        zip -r ../ocr_lambda.zip .
+                        cd ..
+
+                        aws lambda update-function-code \
+                          --function-name ocr_lambda \
+                          --zip-file fileb://ocr_lambda.zip \
+                          --region $AWS_DEFAULT_REGION
+                    '''
+                }
+            }
+        }
+
     post {
         success {
             echo '✅ Deployment succeeded!'
