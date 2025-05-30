@@ -1,47 +1,103 @@
-# IAM role for EC2
-resource "aws_iam_role" "ocr_ec2_role" {
-  name = "ocr-ec2-role"
+resource "aws_lambda_function" "ocr_lambda" {
+  function_name = "ocr_lambda"
+  role          = aws_iam_role.ocr_lambda_exec.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.8"
+
+  s3_bucket        = var.lambda_s3_bucket
+  s3_key           = var.lambda_s3_key
+  source_code_hash = filebase64sha256("${path.module}/../lambda/build/ocr_lambda.zip")
+
+  environment {
+    variables = {
+      AWS_DEFAULT_REGION = var.aws_region
+    }
+  }
+}
+
+# IAM Role for Lambda
+resource "aws_iam_role" "ocr_lambda_exec" {
+  name = "ocr-lambda-exec-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      },
-      Action = "sts:AssumeRole"
-    }]
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
   })
 }
 
-# IAM policy for EC2 to access S3
-resource "aws_iam_policy" "ocr_s3_policy" {
-  name        = "ocr-s3-access-policy"
-  description = "Allows EC2 to access S3 buckets"
+# IAM Policy for Lambda to access S3 and CloudWatch
+resource "aws_iam_policy" "ocr_lambda_policy" {
+  name        = "ocr-lambda-access-policy"
+  description = "Allows Lambda to read from S3 and write to CloudWatch"
+
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:ListBucket"
-      ],
-      Resource = [
-        "arn:aws:s3:::ocr-images-bucket-*",
-        "arn:aws:s3:::ocr-images-bucket-*/*"
-      ]
-    }]
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          "arn:aws:s3:::ocr-images-bucket-*",
+          "arn:aws:s3:::ocr-images-bucket-*/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      }
+    ]
   })
 }
 
-# Attach EC2 policy to role
-resource "aws_iam_role_policy_attachment" "attach_policy" {
-  role       = aws_iam_role.ocr_ec2_role.name
-  policy_arn = aws_iam_policy.ocr_s3_policy.arn
+# Attach IAM Policy to Lambda Role
+resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
+  role       = aws_iam_role.ocr_lambda_exec.name
+  policy_arn = aws_iam_policy.ocr_lambda_policy.arn
 }
 
-# ✅ THIS IS CRUCIAL (used in `instance.tf`)
-resource "aws_iam_instance_profile" "ocr_instance_profile" {
-  name = "ocr-instance-profile"
-  role = aws_iam_role.ocr_ec2_role.name
+# IAM Policy for Terraform user to manage Lambda
+resource "aws_iam_policy" "terraform_lambda_admin_policy" {
+  name        = "terraform-lambda-admin-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:GetFunction",
+          "lambda:DeleteFunction",
+          "iam:PassRole",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach Lambda management policy to Terraform user
+resource "aws_iam_user_policy_attachment" "attach_lambda_admin_to_user" {
+  user       = "terraform"
+  policy_arn = aws_iam_policy.terraform_lambda_admin_policy.arn
 }
