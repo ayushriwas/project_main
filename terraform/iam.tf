@@ -1,3 +1,4 @@
+
 resource "aws_lambda_function" "ocr_lambda" {
   function_name = "ocr_lambda"
   role          = aws_iam_role.ocr_lambda_exec.arn
