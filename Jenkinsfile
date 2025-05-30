@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1'  // Change if needed
+        DOCKER_IMAGE = 'ayush5626/ocr_web'
+        CONTAINER_NAME = 'ocr'
+        AWS_DEFAULT_REGION = 'us-east-1' // Set your AWS region
     }
 
     stages {
@@ -13,50 +15,69 @@ pipeline {
             }
         }
 
-        stage('Prepare Lambda Package') {
+        // Uncomment if you want to build/push Docker image:
+        /*
+        stage('Build Docker Image') {
             steps {
-                dir('lambda') {
-                    echo '📦 Building Lambda deployment package...'
-                    sh '''
-                        set -e
-                        mkdir -p build/python
-                        pip install -r requirements.txt -t build/python
-
-                        cp lambda_function.py ocr_utils.py build/
-                        cd build
-                        zip -r ocr_lambda.zip .
-                    '''
-                }
+                echo '🐳 Building Docker image...'
+                sh """
+                    docker rm -f ${CONTAINER_NAME} || true
+                    docker rmi ${DOCKER_IMAGE} || true
+                    docker build -t ${DOCKER_IMAGE} .
+                """
             }
         }
 
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    echo '📤 Pushing Docker image...'
+                    sh """
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
+                    """
+                }
+            }
+        }
+        */
+
         stage('Terraform Init & Apply') {
             steps {
-              withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                dir('terraform') {
-                    echo '🌍 Running Terraform...'
-                    sh '''
-                        set -e
-                        terraform init
-                        terraform apply -auto-approve
-                    '''
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('terraform') {
+                        echo '🌍 Initializing Terraform...'
+                        sh 'terraform init'
+
+                        echo '🚀 Applying Terraform...'
+                        sh 'terraform apply -auto-approve'
+                    }
                 }
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                echo '🐳 Docker container should be running on EC2 if Terraform succeeded.'
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    echo '🚀 Running Docker container...'
+                    sh """
+                        docker rm -f ${CONTAINER_NAME} || true
+                        docker run -d --name ${CONTAINER_NAME} \
+                          -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                          -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                          -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+                          -p 5000:5000 ${DOCKER_IMAGE}
+                    """
+                }
             }
         }
     }
 
     post {
+        success {
+            echo '✅ Deployment succeeded!'
+        }
         failure {
             echo '❌ Build failed!'
-        }
-        success {
-            echo '✅ Build and deploy successful!'
         }
     }
 }
