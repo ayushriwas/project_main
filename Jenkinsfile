@@ -15,38 +15,53 @@ pipeline {
             }
         }
 
+        stage('Prepare Lambda Package') {
+            steps {
+                dir('lambda') {
+                    echo '📦 Building Lambda deployment package...'
+                    sh '''
+                        mkdir -p build/python
+                        pip install -r requirements.txt -t build/python
+
+                        cp lambda_function.py ocr_utils.py build/
+                        cd build
+                        zip -r ../ocr_lambda.zip .
+                    '''
+                }
+            }
+        }
+
         stage('Terraform Init & Import') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     dir('terraform') {
                         echo '🌍 Initializing Terraform...'
-                        echo '⚙️ Setting up Terraform plugin cache...'
                         sh '''
                             mkdir -p ~/.terraform.d/plugin-cache
                             echo 'plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"' > ~/.terraformrc
+                            terraform init -upgrade=false
                         '''
-                        sh 'terraform init -upgrade=false'
 
                         echo '📦 Importing existing resources if not already managed...'
                         sh '''
                             if ! terraform state list | grep -q aws_s3_bucket.ocr_bucket; then
-                                terraform import aws_s3_bucket.ocr_bucket ocr-images-bucket-e6a2ac1e
+                              terraform import aws_s3_bucket.ocr_bucket ocr-images-bucket-e6a2ac1e
                             fi
 
                             if ! terraform state list | grep -q aws_iam_role.ocr_ec2_role; then
-                                terraform import aws_iam_role.ocr_ec2_role ocr-ec2-role
+                              terraform import aws_iam_role.ocr_ec2_role ocr-ec2-role
                             fi
 
                             if ! terraform state list | grep -q aws_iam_policy.ocr_s3_policy; then
-                                terraform import aws_iam_policy.ocr_s3_policy arn:aws:iam::416586670456:policy/ocr-s3-access-policy
+                              terraform import aws_iam_policy.ocr_s3_policy arn:aws:iam::416586670456:policy/ocr-s3-access-policy
                             fi
 
                             if ! terraform state list | grep -q aws_iam_instance_profile.ocr_instance_profile; then
-                                terraform import aws_iam_instance_profile.ocr_instance_profile ocr-instance-profile
+                              terraform import aws_iam_instance_profile.ocr_instance_profile ocr-instance-profile
                             fi
 
                             if ! terraform state list | grep -q aws_security_group.ocr_sg; then
-                                terraform import aws_security_group.ocr_sg sg-05e5f2bf0260d2f9d
+                              terraform import aws_security_group.ocr_sg sg-05e5f2bf0260d2f9d
                             fi
                         '''
                     }
@@ -59,6 +74,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     dir('terraform') {
                         echo '🚀 Applying Terraform...'
+                        // copy zip so terraform can use it
+                        sh 'cp ../lambda/ocr_lambda.zip .'
                         sh 'terraform apply -auto-approve'
                     }
                 }
@@ -77,27 +94,6 @@ pipeline {
                           -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
                           -p 5000:5000 ${DOCKER_IMAGE}
                     """
-                }
-            }
-        }
-
-        stage('Build & Deploy Lambda') {
-            steps {
-                dir('lambda') {
-                    sh '''
-                        mkdir -p build/python
-                        pip install -r requirements.txt -t build/python
-
-                        cp lambda_function.py ocr_utils.py build/
-                        cd build
-                        zip -r ../ocr_lambda.zip .
-                        cd ..
-
-                        aws lambda update-function-code \
-                          --function-name ocr_lambda \
-                          --zip-file fileb://ocr_lambda.zip \
-                          --region $AWS_DEFAULT_REGION
-                    '''
                 }
             }
         }
