@@ -1,31 +1,11 @@
-resource "aws_iam_role" "lambda_exec_role" {
-  name = "lambda-exec-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action    = "sts:AssumeRole",
-      Effect    = "Allow",
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_basic_exec" {
-  role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
 resource "aws_lambda_function" "ocr_lambda" {
   function_name = "ocr_lambda"
   role          = aws_iam_role.ocr_lambda_exec.arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.8"
 
-  filename         = "${path.module}/../lambda/ocr_lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../lambda/ocr_lambda.zip")
+  filename         = "${path.module}/../lambda/build/ocr_lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../lambda/build/ocr_lambda.zip")
 
   environment {
     variables = {
@@ -34,22 +14,58 @@ resource "aws_lambda_function" "ocr_lambda" {
   }
 }
 
-resource "aws_s3_bucket_notification" "lambda_trigger" {
-  bucket = aws_s3_bucket.ocr_bucket.id
+# IAM Role for Lambda
+resource "aws_iam_role" "ocr_lambda_exec" {
+  name = "ocr-lambda-exec-role"
 
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.ocr_lambda.arn
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "uploads/"
-  }
-
-  depends_on = [aws_lambda_permission.allow_s3]
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
-resource "aws_lambda_permission" "allow_s3" {
-  statement_id  = "AllowExecutionFromS3"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.ocr_lambda.function_name
-  principal     = "s3.amazonaws.com"
-  source_arn    = aws_s3_bucket.ocr_bucket.arn
+# IAM Policy for Lambda to access S3 and CloudWatch
+resource "aws_iam_policy" "ocr_lambda_policy" {
+  name        = "ocr-lambda-access-policy"
+  description = "Allows Lambda to read from S3 and write to CloudWatch"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          "arn:aws:s3:::ocr-images-bucket-*",
+          "arn:aws:s3:::ocr-images-bucket-*/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach IAM Policy to Lambda Role
+resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
+  role       = aws_iam_role.ocr_lambda_exec.name
+  policy_arn = aws_iam_policy.ocr_lambda_policy.arn
 }
