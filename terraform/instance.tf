@@ -13,15 +13,13 @@ resource "aws_instance" "ocr_server" {
 
   user_data = <<-EOF
               #!/bin/bash
-              apt-get update -y
-              apt-get install -y docker.io
-              systemctl enable docker
-              systemctl start docker
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
+              sudo systemctl enable docker
+              sudo systemctl start docker
 	      sudo usermod admin -aG docker
-	      sudo reboot
-              docker pull ${var.docker_image}
-              docker run -d -p 5000:5000 \
-                -e AWS_DEFAULT_REGION=${var.aws_region} \
+              sudo docker pull ${var.docker_image}
+              sudo docker run --name ocr -d -p 5000:5000 \
                 ${var.docker_image}
               EOF
 
