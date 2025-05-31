@@ -10,6 +10,16 @@ s3 = boto3.client('s3')
 UPLOAD_FOLDER = '/tmp'  # Lambda-compatible, also works locally
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+@app.route('/', methods=['GET'])
+def home():
+    return '''
+    <h1>OCR Image Upload</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <input type="submit" value="Upload Image">
+    </form>
+    '''
+
 @app.route('/upload', methods=['POST'])
 def upload_image():
     file = request.files['file']

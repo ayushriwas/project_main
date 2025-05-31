@@ -17,6 +17,29 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                echo '🐳 Building Docker image...'
+                sh """
+			docker rm -f ${CONTAINER_NAME}
+			docker rmi ${DOCKER_IMAGE}
+			docker build -t ${DOCKER_IMAGE} .
+		"""
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    echo '📤 Pushing Docker image...'
+                    sh """
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
+                    """
+                }
+            }
+        }
+
         stage('Prepare Lambda Package') {
             steps {
                 dir('lambda') {
