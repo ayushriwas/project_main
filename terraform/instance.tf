@@ -18,6 +18,7 @@ resource "aws_instance" "ocr_server" {
               systemctl enable docker
               systemctl start docker
 	      sudo usermod admin -aG docker
+	      sudo reboot
               docker pull ${var.docker_image}
               docker run -d -p 5000:5000 \
                 -e AWS_DEFAULT_REGION=${var.aws_region} \
