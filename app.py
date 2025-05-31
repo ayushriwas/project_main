@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, url_for  # ✅ Added url_for
 import cv2
 import pytesseract
 import numpy as np
@@ -46,13 +46,13 @@ def index():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-            # Preprocess and overwrite with processed image
+            # Preprocess and save processed image
             processed_filename = f"processed_{filename}"
             processed_filepath = os.path.join(app.config['UPLOAD_FOLDER'], processed_filename)
-	    processed_image = preprocess_image(filepath)
+            processed_image = preprocess_image(filepath)
             cv2.imwrite(processed_filepath, processed_image)
 
-            # Upload to S3
+            # Upload original image to S3
             with open(filepath, "rb") as img_data:
                 s3.upload_fileobj(
                     img_data,
@@ -66,10 +66,11 @@ def index():
             # Extract text
             tesseract_text = extract_text_tesseract(processed_image)
 
-            return render_template('result.html',
-                                    original_image_url=image_url,  # S3 public URL or local URL for original
-                                    processed_image_url=url_for('static', filename=f'uploads/processed_{filename}'),
-                                    tesseract_text=tesseract_text
+            return render_template(
+                'result.html',
+                original_image_url=image_url,
+                processed_image_url=url_for('static', filename=f'uploads/{processed_filename}'),
+                tesseract_text=tesseract_text
             )
 
     return render_template('index.html')
