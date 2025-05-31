@@ -36,3 +36,8 @@ variable "lambda_s3_bucket" {
 variable "lambda_s3_key" {
   description = "The S3 key for the Lambda deployment package"
 }
+
+variable "lambda_exists" {
+  type    = bool
+  default = false
+}

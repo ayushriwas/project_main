@@ -21,10 +21,10 @@ pipeline {
             steps {
                 echo '🐳 Building Docker image...'
                 sh """
-			docker rm -f ${CONTAINER_NAME}
-			docker rmi ${DOCKER_IMAGE}
-			docker build -t ${DOCKER_IMAGE} .
-		"""
+                    docker rm -f ${CONTAINER_NAME} || true
+                    docker rmi ${DOCKER_IMAGE} || true
+                    docker build -t ${DOCKER_IMAGE} .
+                """
             }
         }
 
@@ -67,14 +67,33 @@ pipeline {
             }
         }
 
+        stage('Pre-check Existing Resources') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    echo '🔍 Checking if Lambda function already exists...'
+                    sh '''
+                        if aws lambda get-function --function-name ocr_lambda --region $AWS_DEFAULT_REGION > /dev/null 2>&1; then
+                            echo "✅ Lambda function already exists. Skipping creation in Terraform."
+                            echo 'TF_VAR_lambda_exists=true' > terraform/precheck_env.sh
+                        else
+                            echo "⚠️ Lambda function does NOT exist. It will be created."
+                            echo 'TF_VAR_lambda_exists=false' > terraform/precheck_env.sh
+                        fi
+                    '''
+                }
+            }
+        }
+
         stage('Terraform Init & Apply') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     dir('terraform') {
                         echo '🌍 Running Terraform...'
                         sh '''
+                            source precheck_env.sh || true
                             export TF_VAR_lambda_s3_bucket=$S3_BUCKET
                             export TF_VAR_lambda_s3_key=$S3_KEY
+                            export TF_VAR_lambda_exists=${TF_VAR_lambda_exists:-false}
                             terraform init
                             terraform apply -auto-approve
                         '''

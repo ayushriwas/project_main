@@ -105,6 +105,7 @@ resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
 # LAMBDA FUNCTION
 # ========================================
 resource "aws_lambda_function" "ocr_lambda" {
+  count         = var.lambda_exists ? 0 : 1
   function_name = "ocr_lambda"
   role          = aws_iam_role.ocr_lambda_exec.arn
   handler       = "lambda_function.lambda_handler"
