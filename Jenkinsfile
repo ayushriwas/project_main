@@ -99,7 +99,7 @@ pipeline {
                            terraform init
 
                            # Taint existing IAM-related resources
-                           terraform taint aws_iam_role.ocr_ec2_role
+                           terraform taint aws_iam_role.ocr_ec2_role || true
 			   terraform taint aws_iam_policy.ocr_s3_policy || true
 			   terraform taint aws_iam_role_policy_attachment.attach_s3_policy_to_ec2 || true
                            terraform taint aws_iam_instance_profile.ocr_instance_profile || true
