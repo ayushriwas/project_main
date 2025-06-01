@@ -158,22 +158,65 @@ resource "aws_iam_policy" "terraform_lambda_admin_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = [
-        "lambda:CreateFunction",
-        "lambda:UpdateFunctionCode",
-        "lambda:GetFunction",
-        "lambda:DeleteFunction",
-        "lambda:ListVersionsByFunction",
-        "lambda:GetFunctionCodeSigningConfig",
-        "iam:PassRole",
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Sid    = "LambdaFullAccess"
+        Effect = "Allow"
+        Action = [
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:GetFunction",
+          "lambda:DeleteFunction",
+          "lambda:ListVersionsByFunction",
+          "lambda:GetFunctionCodeSigningConfig",
+          "lambda:AddPermission",
+          "lambda:RemovePermission",
+          "lambda:InvokeFunction",
+          "lambda:UpdateFunctionConfiguration"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMPassRole"
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "S3Access"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+          "s3:GetBucketNotification",
+          "s3:PutBucketNotification"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "VPCIfNeeded"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeVpcs"
+        ]
+        Resource = "*"
+      }
+    ]
   })
 }
 
