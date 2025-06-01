@@ -15,7 +15,7 @@ resource "aws_instance" "ocr_server" {
               #!/bin/bash
 
               # Update and install Docker
-              sudo apt update -y
+              sudo apt update 
               sudo apt install -y docker.io
 
               # Enable and start Docker
