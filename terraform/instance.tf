@@ -17,16 +17,16 @@ resource "aws_instance" "ocr_server" {
               set -x
 
               # Update and install Docker
-              apt-get update -y
-              apt-get install -y docker.io
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
 
               # Enable and start Docker
-              systemctl enable docker
-              systemctl start docker
+              sudo systemctl enable docker
+              sudo systemctl start docker
 
               # Add default user to Docker group (Ubuntu AMI)
-              usermod -aG docker ubuntu
-	      usermod -aG docker admin	
+              sudo usermod -aG docker ubuntu
+	      sudo usermod -aG docker admin	
               # Wait a few seconds to ensure Docker is ready
               sleep 10
 
