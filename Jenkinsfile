@@ -103,7 +103,7 @@ pipeline {
 			    terraform taint aws_iam_policy.ocr_lambda_policy
 			    terraform taint aws_iam_role_policy_attachment.attach_lambda_policy
 			   # terraform taint aws_lambda_function.ocr_lambda
-                           # terraform taint aws_lambda_permission.allow_s3_to_invoke[0]
+                            terraform taint aws_lambda_permission.allow_s3_to_invoke[0]
 			   # terraform taint aws_iam_policy.terraform_lambda_admin_policy
                            # terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user
 
