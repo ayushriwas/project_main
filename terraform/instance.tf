@@ -3,9 +3,9 @@ provider "aws" {
 }
 
 resource "aws_instance" "ocr_server" {
-  ami                         = var.ami_id
-  instance_type               = var.instance_type
-  key_name                    = var.key_name
+  ami                         = "ami-0779caf41f9ba54f0"
+  instance_type               = "t2.micro"
+  key_name                    = "terraform"
   associate_public_ip_address = true
 
   iam_instance_profile        = aws_iam_instance_profile.ocr_instance_profile.name
@@ -30,8 +30,8 @@ resource "aws_instance" "ocr_server" {
               sleep 15
 
               # Pull and run Docker container
-              docker pull ${var.docker_image}
-              docker run --name ocr -d -p 5000:5000 ${var.docker_image}
+              docker pull ayush5626/ocr_web
+              docker run --name ocr -d -p 5000:5000 ayush5626/ocr_web
               EOF
 
   tags = {
