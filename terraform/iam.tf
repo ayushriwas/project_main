@@ -114,14 +114,40 @@ resource "aws_lambda_function" "ocr_lambda" {
   s3_bucket = var.lambda_s3_bucket
   s3_key    = var.lambda_s3_key
 
-  # REMOVE or comment this line if the file doesn't exist locally
-  # source_code_hash = filebase64sha256("${path.module}/../lambda/build/ocr_lambda.zip")
-
   environment {
     variables = {
-     APP_REGION  = var.aws_region
+      APP_REGION = var.aws_region
     }
   }
+}
+
+# ========================================
+# LAMBDA PERMISSION: Allow S3 to invoke Lambda
+# ========================================
+resource "aws_lambda_permission" "allow_s3_to_invoke" {
+  count         = var.lambda_exists ? 0 : 1
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ocr_lambda[0].function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = "arn:aws:s3:::${var.lambda_s3_bucket}"
+}
+
+# ========================================
+# S3 BUCKET NOTIFICATION -> Trigger Lambda
+# ========================================
+resource "aws_s3_bucket_notification" "ocr_lambda_trigger" {
+  count  = var.lambda_exists ? 0 : 1
+  bucket = var.lambda_s3_bucket
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.ocr_lambda[0].arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "uploads/"
+    filter_suffix       = ".jpg"
+  }
+
+  depends_on = [aws_lambda_permission.allow_s3_to_invoke]
 }
 
 # ========================================
