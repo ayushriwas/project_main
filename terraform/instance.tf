@@ -27,8 +27,9 @@ resource "aws_instance" "ocr_server" {
               # Add default user to Docker group (Ubuntu AMI)
               sudo usermod -aG docker ubuntu
 	      sudo usermod -aG docker admin	
-              # Wait a few seconds to ensure Docker is ready
-              sleep 10
+              sudo systectl restart docker 
+	      # Wait a few seconds to ensure Docker is ready
+              sleep 15
 
               # Pull and run Docker container
               docker pull ${var.docker_image}
