@@ -166,6 +166,7 @@ resource "aws_iam_policy" "terraform_lambda_admin_policy" {
           "lambda:CreateFunction",
           "lambda:UpdateFunctionCode",
           "lambda:GetFunction",
+	  "lambda:GetPolicy",
           "lambda:DeleteFunction",
           "lambda:ListVersionsByFunction",
           "lambda:GetFunctionCodeSigningConfig",
