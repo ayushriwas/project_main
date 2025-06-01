@@ -58,7 +58,7 @@ pipeline {
 
         stage('Upload to S3') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     echo '☁️ Uploading Lambda package to S3...'
                     sh '''
                         aws s3 cp lambda/build/ocr_lambda.zip s3://$S3_BUCKET/$S3_KEY --region $AWS_DEFAULT_REGION
@@ -69,7 +69,7 @@ pipeline {
 
         stage('Pre-check Existing Resources') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     echo '🔍 Checking if Lambda function already exists...'
                     sh '''
                         if aws lambda get-function --function-name ocr_lambda --region $AWS_DEFAULT_REGION > /dev/null 2>&1; then
@@ -125,7 +125,7 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     echo '🚀 Running Docker container...'
                     sh '''
                         docker rm -f ${CONTAINER_NAME} || true
