@@ -4,6 +4,7 @@ import pytesseract
 import numpy as np
 import os
 import boto3
+s3 = boto3.client('s3') 
 from werkzeug.utils import secure_filename
 from PIL import Image
 
