@@ -128,7 +128,9 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     echo '🚀 Running Docker container...'
                     sh '''
-                        docker rm -f ${CONTAINER_NAME} || true
+    			docker rm -f ${CONTAINER_NAME} || true
+			docker rmi ${DOCKER_IMAGE}
+			docker pull ${DOCKER_IMAGE}
                         docker run -d --name ${CONTAINER_NAME} \
                           -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
                           -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
