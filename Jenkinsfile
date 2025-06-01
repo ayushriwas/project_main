@@ -95,6 +95,7 @@ pipeline {
                             export TF_VAR_lambda_s3_key=$S3_KEY
                             export TF_VAR_lambda_exists=${TF_VAR_lambda_exists:-false}
                             terraform init
+		            terraform taint aws_instance.ocr_server
                             terraform apply -auto-approve
                         '''
                     }
