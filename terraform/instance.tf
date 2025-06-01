@@ -13,14 +13,26 @@ resource "aws_instance" "ocr_server" {
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt-get update -y
-              sudo apt-get install -y docker.io
-              sudo systemctl enable docker
-              sudo systemctl start docker
-	      sudo usermod admin -aG docker
-              sudo docker pull ${var.docker_image}
-              sudo docker run --name ocr -d -p 5000:5000 \
-                ${var.docker_image}
+              exec > /var/log/user-data.log 2>&1
+              set -x
+
+              # Update and install Docker
+              apt-get update -y
+              apt-get install -y docker.io
+
+              # Enable and start Docker
+              systemctl enable docker
+              systemctl start docker
+
+              # Add default user to Docker group (Ubuntu AMI)
+              usermod -aG docker ubuntu
+	      usermod -aG docker admin	
+              # Wait a few seconds to ensure Docker is ready
+              sleep 10
+
+              # Pull and run Docker container
+              docker pull ${var.docker_image}
+              docker run --name ocr -d -p 5000:5000 ${var.docker_image}
               EOF
 
   tags = {
