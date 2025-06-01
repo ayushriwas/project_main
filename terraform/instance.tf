@@ -13,12 +13,10 @@ resource "aws_instance" "ocr_server" {
 
   user_data = <<-EOF
               #!/bin/bash
-              exec > /var/log/user-data.log 2>&1
-              set -x
 
               # Update and install Docker
-              sudo apt-get update -y
-              sudo apt-get install -y docker.io
+              sudo apt update -y
+              sudo apt install -y docker.io
 
               # Enable and start Docker
               sudo systemctl enable docker
