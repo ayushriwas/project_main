@@ -21,5 +21,6 @@ docker run -d --name ocr \
   -e S3_REGION=us-east-1 \
   -p 5000:5000 \
   ayush5626/ocr_web
-
 docker start ocr
+docker restart ocr
+docker restart ocr
