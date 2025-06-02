@@ -117,9 +117,9 @@ pipeline {
                             terraform taint aws_lambda_permission.allow_s3_to_invoke || true
 
                             # Uncomment these if needed and if created before
-                            # terraform taint aws_lambda_function.ocr_lambda || true
-                            # terraform taint aws_iam_policy.terraform_lambda_admin_policy || true
-                            # terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user || true
+                             terraform taint aws_lambda_function.ocr_lambda || true
+                             terraform taint aws_iam_policy.terraform_lambda_admin_policy || true
+                             terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user || true
 
                             terraform apply -auto-approve
                         '''
