@@ -41,3 +41,8 @@ variable "lambda_exists" {
   type    = bool
   default = false
 }
+variable "environment" {
+  description = "Environment tag (e.g. dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}
