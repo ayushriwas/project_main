@@ -18,5 +18,5 @@
 
               # Pull and run the Docker container
               docker pull ayush5626/ocr_web
-	      docker run --name ocr -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e S3_BUCKET=ocr-images-bucket-e6a2ac1e -e S3_REGION=us-east-1 -d -p 5000:5000 ayush5626/ocr_web
+	      docker run --name ocr -e S3_BUCKET=ocr-images-bucket-e6a2ac1e -e S3_REGION=us-east-1 -d -p 5000:5000 ayush5626/ocr_web
 	      docker start ocr

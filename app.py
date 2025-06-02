@@ -16,14 +16,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # === AWS S3 CONFIG ===
 S3_BUCKET = 'ocr-images-bucket-e6a2ac1e'
 S3_REGION = 'us-east-1'
-
-s3 = boto3.client(
-    's3',
-    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-    region_name=S3_REGION
-)
-
+region = os.getenv("APP_REGION", "us-east-1")
+s3 = boto3.client('s3', region_name=region )
 # === Image Preprocessing ===
 def preprocess_image(image_path):
     image = cv2.imread(image_path)
