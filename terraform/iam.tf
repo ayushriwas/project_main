@@ -18,22 +18,33 @@ resource "aws_iam_role" "ocr_ec2_role" {
 
 resource "aws_iam_policy" "ocr_s3_policy" {
   name        = "ocr-s3-access-policy"
-  description = "Allows EC2 to access S3 buckets"
+  description = "Allows EC2 to access S3 buckets and basic EC2/STS metadata"
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:ListBucket"
-      ],
-      Resource = [
-        "arn:aws:s3:::ocr-images-bucket-*",
-        "arn:aws:s3:::ocr-images-bucket-*/*"
-      ]
-    }]
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          "arn:aws:s3:::ocr-images-bucket-*",
+          "arn:aws:s3:::ocr-images-bucket-*/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ec2:DescribeInstances",
+          "iam:GetInstanceProfile",
+          "sts:GetCallerIdentity"
+        ],
+        Resource = "*"
+      }
+    ]
   })
 }
 
@@ -166,7 +177,7 @@ resource "aws_iam_policy" "terraform_lambda_admin_policy" {
           "lambda:CreateFunction",
           "lambda:UpdateFunctionCode",
           "lambda:GetFunction",
-	  "lambda:GetPolicy",
+          "lambda:GetPolicy",
           "lambda:DeleteFunction",
           "lambda:ListVersionsByFunction",
           "lambda:GetFunctionCodeSigningConfig",
