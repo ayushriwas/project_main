@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'ayush5626/ocr_web'
         CONTAINER_NAME = 'ocr'
         AWS_DEFAULT_REGION = 'us-east-1'
-        S3_BUCKET = 'ocr-images-bucket-e6a2ac1e' // 🔁 Ensure this matches your Terraform bucket name
+        S3_BUCKET = 'ocr-images-bucket-e6a2ac1e' // 🔁 Change this to your actual bucket
         S3_KEY = 'lambda/ocr_lambda.zip'
     }
 
@@ -17,7 +17,6 @@ pipeline {
             }
         }
 
-        // Keep Docker build stages commented if not using
 //         stage('Build Docker Image') {
 //             steps {
 //                 echo '🐳 Building Docker image...'
@@ -57,28 +56,17 @@ pipeline {
             }
         }
 
-        stage('Create S3 Bucket (if needed)') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    echo '🪣 Checking/creating S3 bucket...'
-                    sh '''
-                        if ! aws s3api head-bucket --bucket "$S3_BUCKET" 2>/dev/null; then
-                            echo "Creating bucket $S3_BUCKET..."
-                            aws s3api create-bucket --bucket "$S3_BUCKET" --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION
-                        else
-                            echo "Bucket $S3_BUCKET already exists."
-                        fi
-                    '''
-                }
-            }
-        }
-
         stage('Upload to S3') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    echo '☁️ Uploading Lambda package to S3...'
+                    echo '☁️ Uploading Lambda package to S3 (only if not already present)...'
                     sh '''
-                        aws s3 cp lambda/build/ocr_lambda.zip s3://$S3_BUCKET/$S3_KEY --region $AWS_DEFAULT_REGION
+                        if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
+                            echo "⚠️ Lambda package already exists at s3://$S3_BUCKET/$S3_KEY. Skipping upload."
+                        else
+                            echo "📤 Uploading Lambda package to S3..."
+                            aws s3 cp lambda/build/ocr_lambda.zip s3://$S3_BUCKET/$S3_KEY --region $AWS_DEFAULT_REGION
+                        fi
                     '''
                 }
             }
@@ -125,9 +113,10 @@ pipeline {
                             terraform taint aws_iam_policy.ocr_lambda_policy || true
                             terraform taint aws_iam_role_policy_attachment.attach_lambda_policy || true
 
+                            # Optional (only if created)
                             terraform taint aws_lambda_permission.allow_s3_to_invoke || true
 
-                            # Optional (only if created)
+                            # Uncomment these if needed and if created before
                             # terraform taint aws_lambda_function.ocr_lambda || true
                             # terraform taint aws_iam_policy.terraform_lambda_admin_policy || true
                             # terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user || true
