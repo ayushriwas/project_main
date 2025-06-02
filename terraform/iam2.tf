@@ -1,16 +1,4 @@
 # ========================================
-# LOCALS
-# ========================================
-locals {
-  s3_bucket_arn     = "arn:aws:s3:::${var.lambda_s3_bucket}"
-  s3_bucket_objects = "arn:aws:s3:::${var.lambda_s3_bucket}/*"
-  common_tags = {
-    Project = "OCRApp"
-    Env     = var.environment
-  }
-}
-
-# ========================================
 # IAM ROLE AND POLICIES FOR EC2
 # ========================================
 resource "aws_iam_role" "ocr_ec2_role" {
@@ -26,8 +14,6 @@ resource "aws_iam_role" "ocr_ec2_role" {
       Action = "sts:AssumeRole"
     }]
   })
-
-  tags = local.common_tags
 }
 
 resource "aws_iam_policy" "ocr_s3_policy" {
@@ -45,8 +31,8 @@ resource "aws_iam_policy" "ocr_s3_policy" {
           "s3:ListBucket"
         ],
         Resource = [
-          local.s3_bucket_arn,
-          local.s3_bucket_objects
+          "arn:aws:s3:::ocr-images-bucket-*",
+          "arn:aws:s3:::ocr-images-bucket-*/*"
         ]
       },
       {
@@ -60,8 +46,6 @@ resource "aws_iam_policy" "ocr_s3_policy" {
       }
     ]
   })
-
-  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "attach_s3_policy_to_ec2" {
@@ -72,8 +56,6 @@ resource "aws_iam_role_policy_attachment" "attach_s3_policy_to_ec2" {
 resource "aws_iam_instance_profile" "ocr_instance_profile" {
   name = "ocr-instance-profile"
   role = aws_iam_role.ocr_ec2_role.name
-
-  tags = local.common_tags
 }
 
 # ========================================
@@ -92,8 +74,6 @@ resource "aws_iam_role" "ocr_lambda_exec" {
       Action = "sts:AssumeRole"
     }]
   })
-
-  tags = local.common_tags
 }
 
 resource "aws_iam_policy" "ocr_lambda_policy" {
@@ -110,8 +90,8 @@ resource "aws_iam_policy" "ocr_lambda_policy" {
           "s3:ListBucket"
         ],
         Resource = [
-          local.s3_bucket_arn,
-          local.s3_bucket_objects
+          "arn:aws:s3:::ocr-images-bucket-*",
+          "arn:aws:s3:::ocr-images-bucket-*/*"
         ]
       },
       {
@@ -125,8 +105,6 @@ resource "aws_iam_policy" "ocr_lambda_policy" {
       }
     ]
   })
-
-  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
@@ -142,7 +120,7 @@ resource "aws_lambda_function" "ocr_lambda" {
   function_name = "ocr_lambda"
   role          = aws_iam_role.ocr_lambda_exec.arn
   handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.11"
+  runtime       = "python3.8"
 
   s3_bucket = var.lambda_s3_bucket
   s3_key    = var.lambda_s3_key
@@ -152,8 +130,6 @@ resource "aws_lambda_function" "ocr_lambda" {
       APP_REGION = var.aws_region
     }
   }
-
-  tags = local.common_tags
 }
 
 # ========================================
@@ -165,7 +141,7 @@ resource "aws_lambda_permission" "allow_s3_to_invoke" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ocr_lambda[0].function_name
   principal     = "s3.amazonaws.com"
-  source_arn    = local.s3_bucket_arn
+  source_arn    = "arn:aws:s3:::${var.lambda_s3_bucket}"
 }
 
 # ========================================
@@ -176,7 +152,7 @@ resource "aws_s3_bucket_notification" "ocr_lambda_trigger" {
   bucket = var.lambda_s3_bucket
 
   lambda_function {
-    id                  = "s3-to-lambda-ocr"
+    id 			= "s3-to-lambda-ocr"
     lambda_function_arn = aws_lambda_function.ocr_lambda[0].arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "uploads/"
@@ -216,7 +192,9 @@ resource "aws_iam_policy" "terraform_lambda_admin_policy" {
       {
         Sid    = "IAMPassRole"
         Effect = "Allow"
-        Action = ["iam:PassRole"]
+        Action = [
+          "iam:PassRole"
+        ]
         Resource = "*"
       },
       {
@@ -253,8 +231,6 @@ resource "aws_iam_policy" "terraform_lambda_admin_policy" {
       }
     ]
   })
-
-  tags = local.common_tags
 }
 
 resource "aws_iam_user_policy_attachment" "attach_lambda_admin_to_user" {
