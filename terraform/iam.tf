@@ -152,6 +152,7 @@ resource "aws_s3_bucket_notification" "ocr_lambda_trigger" {
   bucket = var.lambda_s3_bucket
 
   lambda_function {
+    id 			= "s3-to-lambda-ocr"
     lambda_function_arn = aws_lambda_function.ocr_lambda[0].arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "uploads/"
