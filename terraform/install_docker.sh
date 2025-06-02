@@ -22,3 +22,4 @@ docker run -d --name ocr \
   -p 5000:5000 \
   ayush5626/ocr_web
 
+docker start ocr
