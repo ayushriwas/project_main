@@ -17,28 +17,7 @@ pipeline {
             }
         }
 
-//         stage('Build Docker Image') {
-//             steps {
-//                 echo '🐳 Building Docker image...'
-//                 sh """
-//                     docker rm -f ${CONTAINER_NAME} || true
-//                     docker rmi ${DOCKER_IMAGE} || true
-//                     docker build -t ${DOCKER_IMAGE} .
-//                 """
-//             }
-//         }
-
-//         stage('Push Docker Image') {
-//             steps {
-//                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-//                     echo '📤 Pushing Docker image...'
-//                     sh """
-//                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-//                         docker push ${DOCKER_IMAGE}
-//                     """
-//                 }
-//             }
-//         }
+        // Build and Push Docker image stages (optional) are commented out.
 
         stage('Prepare Lambda Package') {
             steps {
@@ -51,6 +30,29 @@ pipeline {
                         cp lambda_function.py ocr_utils.py build/
                         cd build
                         zip -r ocr_lambda.zip .
+                    '''
+                }
+            }
+        }
+
+        stage('Ensure S3 Bucket Exists') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    echo '🪣 Ensuring S3 bucket exists...'
+                    sh '''
+                        if aws s3api head-bucket --bucket "$S3_BUCKET" 2>/dev/null; then
+                            echo "✅ Bucket already exists."
+                        else
+                            echo "🪣 Creating bucket..."
+                            if [ "$AWS_DEFAULT_REGION" = "us-east-1" ]; then
+                                aws s3api create-bucket --bucket "$S3_BUCKET" --region "$AWS_DEFAULT_REGION"
+                            else
+                                aws s3api create-bucket --bucket "$S3_BUCKET" \
+                                    --region "$AWS_DEFAULT_REGION" \
+                                    --create-bucket-configuration LocationConstraint="$AWS_DEFAULT_REGION"
+                            fi
+                            aws s3api wait bucket-exists --bucket "$S3_BUCKET" --region "$AWS_DEFAULT_REGION"
+                        fi
                     '''
                 }
             }
@@ -118,8 +120,8 @@ pipeline {
 
                             # Uncomment these if needed and if created before
                             # terraform taint aws_lambda_function.ocr_lambda || true
-                             terraform taint aws_iam_policy.terraform_lambda_admin_policy || true
-                             terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user || true
+                            terraform taint aws_iam_policy.terraform_lambda_admin_policy || true
+                            terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user || true
 
                             terraform apply -auto-approve
                         '''
