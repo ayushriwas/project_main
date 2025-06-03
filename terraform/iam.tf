@@ -153,7 +153,8 @@ resource "aws_lambda_function" "ocr_lambda" {
   kms_key_arn = "arn:aws:kms:us-east-1:416586670456:key/89906079-3afb-4f87-9bde-0b4f7935fb7b"
   s3_bucket = var.lambda_s3_bucket
   s3_key    = var.lambda_s3_key
-
+  timeout   = 60
+  memory_size = 500
   environment {
     variables = {
       APP_REGION = var.aws_region
