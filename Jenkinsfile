@@ -19,17 +19,15 @@ pipeline {
 
         // Build and Push Docker image stages (optional) are commented out.
 
-        stage('Prepare Lambda Package') {
+        stage('Prepare Lambda Package with OpenCV') {
             steps {
                 dir('lambda') {
-                    echo '📦 Building Lambda deployment package...'
+                    echo '📦 Building Lambda package with OpenCV using Docker...'
                     sh '''
-                        set -e
-                        mkdir -p build/python
-                        pip install -r requirements.txt -t build/python
-                        cp lambda_function.py ocr_utils.py build/
-                        cd build
-                        zip -r ocr_lambda.zip .
+                        mkdir -p build
+                        docker build -t lambda-builder .
+                        docker run --rm -v "$PWD/build":/output lambda-builder \
+                            cp /opt/lambda/ocr_lambda.zip /output/
                     '''
                 }
             }
