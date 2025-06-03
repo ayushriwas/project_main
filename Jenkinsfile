@@ -26,8 +26,8 @@ pipeline {
                     sh '''
                         mkdir -p build
                         docker build -t lambda-builder .
-			docker run --rm -v "$PWD/lambda/build":/output --entrypoint /bin/sh lambda-builder \
-                        -c "cp /opt/lambda/ocr_lambda.zip /output/ocr_lambda.zip"
+			docker run --rm -v "$PWD/build":/output --entrypoint /bin/sh lambda-builder \
+                            -c "cp /opt/lambda/ocr_lambda.zip /output/"
                     '''
                 }
             }
