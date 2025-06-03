@@ -14,9 +14,7 @@ def lambda_handler(event, context):
             'body': f"Invalid event structure: {str(e)}"
         }
 
-    # Region fallback (optional override)
     region = os.getenv("APP_REGION", "us-east-1")
-
     s3 = boto3.client('s3', region_name=region)
 
     try:
@@ -27,12 +25,23 @@ def lambda_handler(event, context):
             # Run OCR on the downloaded image
             extracted_text = process_image_and_extract_text(temp_file.name)
 
-        # Log result (or integrate with downstream service)
-        print(f"OCR result for {key}:\n{extracted_text}")
+        # Upload OCR result to results/ folder in same bucket
+        result_key = f"results/{os.path.basename(key)}.txt"
+        try:
+            s3.put_object(
+                Bucket=bucket,
+                Key=result_key,
+                Body=extracted_text.encode("utf-8"),  # Ensure string is encoded
+                ContentType='text/plain'
+            )
+            print(f"✅ Uploaded OCR result to s3://{bucket}/{result_key}")
+        except Exception as upload_err:
+            print(f"❌ Failed to upload result: {upload_err}")
 
+        # Final Lambda response
         return {
             'statusCode': 200,
-            'body': f'OCR completed for {key}. Extracted text:\n{extracted_text}'
+            'body': f'OCR completed for {key}. Result saved to {result_key}'
         }
 
     except Exception as e:
