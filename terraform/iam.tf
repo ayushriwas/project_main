@@ -98,7 +98,7 @@ resource "aws_iam_role" "ocr_lambda_exec" {
 
 resource "aws_iam_policy" "ocr_lambda_policy" {
   name        = "ocr-lambda-access-policy"
-  description = "Allows Lambda to read from S3 and write to CloudWatch"
+  description = "Allows Lambda to read from S3, CloudWatch logs, and KMS for environment decryption"
 
   policy = jsonencode({
     Version = "2012-10-17",
@@ -122,6 +122,13 @@ resource "aws_iam_policy" "ocr_lambda_policy" {
           "logs:PutLogEvents"
         ],
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "kms:Decrypt"
+        ],
+        Resource = "*"  # Use specific KMS ARN if preferred
       }
     ]
   })
