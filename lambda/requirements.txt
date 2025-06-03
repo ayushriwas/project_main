@@ -1,6 +1,4 @@
-Flask
-opencv-python-headless
-pytesseract
-numpy
 boto3
-pillow
+pytesseract
+opencv-python-headless
+
