@@ -21,7 +21,7 @@ WORKDIR /opt/python
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt .
+RUN pip install -r requirements.txt
 
 # Add your source files
 COPY lambda_function.py /opt/
