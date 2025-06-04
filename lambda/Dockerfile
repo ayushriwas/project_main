@@ -1,28 +1,25 @@
 # lambda/Dockerfile
-FROM public.ecr.aws/lambda/python:3.11
 
-# ✅ Install Tesseract and OpenCV dependencies
+FROM amazonlinux:2
+
 RUN yum -y update && \
-    yum -y install \
-        gcc gcc-c++ cmake python3-devel \
+    yum install -y \
+        python3 python3-devel \
+        gcc gcc-c++ make cmake \
+        tesseract tesseract-langpack-eng \
         opencv opencv-devel \
         zlib-devel libjpeg-devel \
-        zip \
-        epel-release && \
-    yum -y install tesseract tesseract-langpack-eng && \
+        zip && \
     yum clean all
 
-# Set working directory
+RUN python3 -m pip install --upgrade pip
+
 WORKDIR /opt/lambda
 
-# ✅ Copy Python dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt -t python
+RUN pip3 install -r requirements.txt -t python/
 
-# ✅ Copy source code
 COPY lambda_function.py ocr_utils.py python/
 
-# ✅ Package everything into a zip
-WORKDIR /opt/lambda/python
-RUN zip -r9 /opt/lambda/ocr_lambda.zip .
+# ✅ ZIP inside the Docker image itself
+RUN cd python && zip -r9 /opt/lambda/ocr_lambda.zip .
