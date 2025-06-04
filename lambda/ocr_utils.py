@@ -24,10 +24,14 @@ def preprocess_image(image_path):
 
 def process_image_and_extract_text(image_path):
     try:
+        pytesseract.pytesseract.tesseract_cmd = "/opt/bin/tesseract"  # ✅ Add this line for Lambda
+
         processed = preprocess_image(image_path)
         print("[INFO] Starting OCR extraction")
+
         text = pytesseract.image_to_string(processed)
         print("[INFO] OCR extraction completed")
+
         return text
     except Exception as e:
         raise RuntimeError(f"[ERROR] OCR processing failed: {e}")
