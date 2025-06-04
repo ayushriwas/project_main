@@ -23,16 +23,15 @@ pipeline {
             steps {
                 dir('lambda') {
                     echo '📦 Building Lambda package with OpenCV using Docker...'
-            	    sh '''
-                	mkdir -p build
-                	#docker build --network host -t lambda-builder .
-                	docker run --rm \
-                    	--entrypoint /bin/sh \
-                    	-v "$PWD/build":/output \
-                    	lambda-builder \
-                    	-c "cp /opt/lambda/ocr_lambda.zip /output/"
-            	    '''
-
+                    sh '''
+                        mkdir -p build
+                        #docker build --network host -t lambda-builder .
+                        docker run --rm \
+                            --entrypoint /bin/sh \
+                            -v "$PWD/build":/output \
+                            lambda-builder \
+                            -c "cp /opt/lambda/ocr_lambda.zip /output/"
+                    '''
                 }
             }
         }
@@ -81,54 +80,54 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     echo '🔍 Checking if Lambda function already exists...'
                     sh '''
-			# Create/reset env file
-                	rm -f terraform/precheck_env.sh
-                	touch terraform/precheck_env.sh
+                        # Create/reset env file
+                        rm -f terraform/precheck_env.sh
+                        touch terraform/precheck_env.sh
 
-                	# Lambda Function
-                	if aws lambda get-function --function-name ocr_lambda --region $AWS_DEFAULT_REGION > /dev/null 2>&1; then
-                    		echo "✅ Lambda function exists."
-                    		echo 'TF_VAR_lambda_exists=true' >> terraform/precheck_env.sh
-                	else
-                    		echo "⚠️ Lambda function will be created."
-                    		echo 'TF_VAR_lambda_exists=false' >> terraform/precheck_env.sh
-                	fi
+                        # Lambda Function
+                        if aws lambda get-function --function-name ocr_lambda --region $AWS_DEFAULT_REGION > /dev/null 2>&1; then
+                            echo "✅ Lambda function exists."
+                            echo 'TF_VAR_lambda_exists=true' >> terraform/precheck_env.sh
+                        else
+                            echo "⚠️ Lambda function will be created."
+                            echo 'TF_VAR_lambda_exists=false' >> terraform/precheck_env.sh
+                        fi
 
-                	# IAM Role: ocr-ec2-role
-                	if aws iam get-role --role-name ocr-ec2-role > /dev/null 2>&1; then
-                   		echo "✅ IAM role ocr-ec2-role exists."
-                    		echo 'TF_VAR_ec2_role_exists=true' >> terraform/precheck_env.sh
-                	else
-                    		echo "⚠️ IAM role ocr-ec2-role will be created."
-                    		echo 'TF_VAR_ec2_role_exists=false' >> terraform/precheck_env.sh
-                	fi
+                        # IAM Role: ocr-ec2-role
+                        if aws iam get-role --role-name ocr-ec2-role > /dev/null 2>&1; then
+                            echo "✅ IAM role ocr-ec2-role exists."
+                            echo 'TF_VAR_ec2_role_exists=true' >> terraform/precheck_env.sh
+                        else
+                            echo "⚠️ IAM role ocr-ec2-role will be created."
+                            echo 'TF_VAR_ec2_role_exists=false' >> terraform/precheck_env.sh
+                        fi
 
-                	# IAM Policy: ocr-s3-access-policy
-                	if aws iam list-policies --scope Local | grep -q 'ocr-s3-access-policy'; then
-                    		echo "✅ IAM policy ocr-s3-access-policy exists."
-                    		echo 'TF_VAR_s3_policy_exists=true' >> terraform/precheck_env.sh
-                	else
-                    		echo "⚠️ IAM policy ocr-s3-access-policy will be created."
-                    		echo 'TF_VAR_s3_policy_exists=false' >> terraform/precheck_env.sh
-                	fi
+                        # IAM Policy: ocr-s3-access-policy
+                        if aws iam list-policies --scope Local | grep -q 'ocr-s3-access-policy'; then
+                            echo "✅ IAM policy ocr-s3-access-policy exists."
+                            echo 'TF_VAR_s3_policy_exists=true' >> terraform/precheck_env.sh
+                        else
+                            echo "⚠️ IAM policy ocr-s3-access-policy will be created."
+                            echo 'TF_VAR_s3_policy_exists=false' >> terraform/precheck_env.sh
+                        fi
 
-                	# IAM Role: ocr-lambda-exec-role
-                	if aws iam get-role --role-name ocr-lambda-exec-role > /dev/null 2>&1; then
-                    		echo "✅ IAM role ocr-lambda-exec-role exists."
-                    		echo 'TF_VAR_lambda_role_exists=true' >> terraform/precheck_env.sh
-                	else
-                    		echo "⚠️ IAM role ocr-lambda-exec-role will be created."
-                    		echo 'TF_VAR_lambda_role_exists=false' >> terraform/precheck_env.sh
-                	fi
+                        # IAM Role: ocr-lambda-exec-role
+                        if aws iam get-role --role-name ocr-lambda-exec-role > /dev/null 2>&1; then
+                            echo "✅ IAM role ocr-lambda-exec-role exists."
+                            echo 'TF_VAR_lambda_role_exists=true' >> terraform/precheck_env.sh
+                        else
+                            echo "⚠️ IAM role ocr-lambda-exec-role will be created."
+                            echo 'TF_VAR_lambda_role_exists=false' >> terraform/precheck_env.sh
+                        fi
 
-                	# IAM Policy: ocr-lambda-access-policy
-                	if aws iam list-policies --scope Local | grep -q 'ocr-lambda-access-policy'; then
-                    		echo "✅ IAM policy ocr-lambda-access-policy exists."
-                    		echo 'TF_VAR_lambda_policy_exists=true' >> terraform/precheck_env.sh
-                	else
-                    		echo "⚠️ IAM policy ocr-lambda-access-policy will be created."
-                    		echo 'TF_VAR_lambda_policy_exists=false' >> terraform/precheck_env.sh
-                	fi
+                        # IAM Policy: ocr-lambda-access-policy
+                        if aws iam list-policies --scope Local | grep -q 'ocr-lambda-access-policy'; then
+                            echo "✅ IAM policy ocr-lambda-access-policy exists."
+                            echo 'TF_VAR_lambda_policy_exists=true' >> terraform/precheck_env.sh
+                        else
+                            echo "⚠️ IAM policy ocr-lambda-access-policy will be created."
+                            echo 'TF_VAR_lambda_policy_exists=false' >> terraform/precheck_env.sh
+                        fi
                     '''
                 }
             }

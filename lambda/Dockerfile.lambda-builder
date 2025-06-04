@@ -1,0 +1,27 @@
+FROM public.ecr.aws/lambda/python:3.11
+
+# Install Tesseract and OpenCV
+RUN yum -y update && \
+    yum install -y \
+        epel-release \
+        python3 python3-devel \
+        gcc gcc-c++ make cmake \
+        tesseract tesseract-langpack-eng \
+        opencv opencv-devel \
+        zlib-devel libjpeg-devel \
+        zip && \
+    yum clean all
+
+# Setup working directory
+WORKDIR /opt/lambda
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt -t python
+
+# Copy Lambda source code
+COPY lambda_function.py ocr_utils.py python/
+
+# Zip the deployment package
+WORKDIR /opt/lambda/python
+RUN zip -r9 /opt/lambda/ocr_lambda.zip .
