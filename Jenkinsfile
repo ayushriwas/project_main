@@ -7,9 +7,6 @@ pipeline {
         AWS_DEFAULT_REGION = 'us-east-1'
         S3_BUCKET = 'ocr-images-bucket-e6a2ac1e' // 🔁 Change this to your actual bucket
         S3_KEY = 'lambda/ocr_lambda.zip'
-        LAMBDA_IMAGE = 'ayush5626/lambda-container'
-        OUTPUT_DIR = 'lambda/build'
-        ZIP_NAME = 'ocr_lambda.zip'
     }
 
     stages {
@@ -28,7 +25,7 @@ pipeline {
                     echo '📦 Building Lambda package with OpenCV using Docker...'
             	    sh '''
                 	mkdir -p build
-                	docker build --network host -t lambda-builder -f Dockerfile.lambda-builder .
+                	docker build --network host -t lambda-builder .
                 	docker run --rm \
                     	--entrypoint /bin/sh \
                     	-v "$PWD/build":/output \
