@@ -23,15 +23,13 @@ pipeline {
             steps {
                 dir('lambda') {
                     echo '📦 Building Lambda package with OpenCV using Docker...'
-                    sh '''
-                        mkdir -p build
-                       #  docker build --network host -t lambda-builder .
-			docker run --rm --entrypoint /bin/sh \
-			  -v "$PWD/build":/output \
-			  lambda-builder \
-			  -c "cp /opt/lambda/python/ocr_lambda.zip /output/ocr_lambda.zip"
-
+		    sh '''
+    			docker run --rm --entrypoint /bin/sh \
+      			-v "$PWD/build":/output \
+      			lambda-builder \
+      			-c "cp /opt/lambda/ocr_lambda.zip /output/ocr_lambda.zip"
 			'''
+
                 }
             }
         }
