@@ -25,7 +25,7 @@ pipeline {
                     echo '📦 Building Lambda package with OpenCV using Docker...'
             	    sh '''
                 	mkdir -p build
-                	docker build --network host -t lambda-builder .
+                	#docker build --network host -t lambda-builder .
                 	docker run --rm \
                     	--entrypoint /bin/sh \
                     	-v "$PWD/build":/output \
