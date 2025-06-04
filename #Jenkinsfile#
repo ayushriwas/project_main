@@ -4,16 +4,12 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'ayush5626/ocr_web'
         CONTAINER_NAME = 'ocr'
-        AWS_DEFAULT_REGION = 'us-east-1' // Set your AWS region
+        AWS_DEFAULT_REGION = 'us-east-1'
+        S3_BUCKET = 'ocr-images-bucket-e6a2ac1e' // 🔁 Change this to your actual bucket
+        S3_KEY = 'lambda/ocr_lambda.zip'
     }
 
     stages {
-        stage('Cleanup') {
-            steps {
-                cleanWs()
-            }
-        }
-
         stage('Checkout') {
             steps {
                 echo '📥 Checking out code...'
@@ -21,58 +17,113 @@ pipeline {
             }
         }
 
-        stage('Terraform Init & Import') {
+        // Build and Push Docker image stages (optional) are commented out.
+
+        stage('Prepare Lambda Package with OpenCV') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    dir('terraform') {
-                        echo '🌍 Initializing Terraform...'
-                        sh 'terraform init'
-                        echo '⚙️ Setting up Terraform plugin cache...'
-			                        sh '''
-
-   mkdir -p ~/.terraform.d/plugin-cache
-                               echo 'plugin_cache_dir =
-"$HOME/.terraform.d/plugin-cache"' > ~/.terraformrc
-
-
-                        echo '📦 Importing existing resources if not already managed...'
-                        sh '''
-                            # Import S3 bucket
-                            if ! terraform state list | grep -q aws_s3_bucket.ocr_bucket; then
-                              terraform import aws_s3_bucket.ocr_bucket ocr-images-bucket-e6a2ac1e
-                            fi
-
-                            # Import IAM Role
-                            if ! terraform state list | grep -q aws_iam_role.ocr_ec2_role; then
-                              terraform import aws_iam_role.ocr_ec2_role ocr-ec2-role
-                            fi
-
-                            # Import IAM Policy
-                            if ! terraform state list | grep -q aws_iam_policy.ocr_s3_policy; then
-                              terraform import aws_iam_policy.ocr_s3_policy arn:aws:iam::416586670456:policy/ocr-s3-access-policy
-                            fi
-
-                   	    # Import IAM Instance Profile
-                            if ! terraform state list | grep -q aws_iam_instance_profile.ocr_instance_profile; then
-                            terraform import aws_iam_instance_profile.ocr_instance_profile ocr-instance-profile
-                            fi
-
-                            # Import Security Group
-                            if ! terraform state list | grep -q aws_security_group.ocr_sg; then
-                              terraform import aws_security_group.ocr_sg sg-05e5f2bf0260d2f9d
-                            fi
-                        '''
-                    }
+                dir('lambda') {
+                    echo '📦 Building Lambda package with OpenCV using Docker...'
+                    sh '''
+                        mkdir -p build
+                         docker build --network host -t lambda-builder .
+                         docker run --rm -v "$PWD/build":/output lambda-builder \
+                         cp /opt/lambda/ocr_lambda.zip /output/ocr_lambda.zip
+                    '''
                 }
             }
         }
 
-        stage('Terraform Apply') {
+        stage('Ensure S3 Bucket Exists') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    echo '🪣 Ensuring S3 bucket exists...'
+                    sh '''
+                        if aws s3api head-bucket --bucket "$S3_BUCKET" 2>/dev/null; then
+                            echo "✅ Bucket already exists."
+                        else
+                            echo "🪣 Creating bucket..."
+                            if [ "$AWS_DEFAULT_REGION" = "us-east-1" ]; then
+                                aws s3api create-bucket --bucket "$S3_BUCKET" --region "$AWS_DEFAULT_REGION"
+                            else
+                                aws s3api create-bucket --bucket "$S3_BUCKET" \
+                                    --region "$AWS_DEFAULT_REGION" \
+                                    --create-bucket-configuration LocationConstraint="$AWS_DEFAULT_REGION"
+                            fi
+                            aws s3api wait bucket-exists --bucket "$S3_BUCKET" --region "$AWS_DEFAULT_REGION"
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    echo '☁️ Uploading Lambda package to S3 (only if not already present)...'
+                    sh '''
+                        if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
+                            echo "⚠️ Lambda package already exists at s3://$S3_BUCKET/$S3_KEY. Skipping upload."
+                        else
+                            echo "📤 Uploading Lambda package to S3..."
+                            aws s3 cp lambda/build/ocr_lambda.zip s3://$S3_BUCKET/$S3_KEY --region $AWS_DEFAULT_REGION
+                        fi
+                    '''
+                }
+            }
+        }
+	steps {
+	                withCredentials([[$class:
+'AmazonWebServicesCredentialsBindi>
+                    echo '☁️ Uploading Lambda package to S3 (only if
+not alre>
+                    sh '''
+		                            if aws s3api head-object
+--bucket "$S3_BUCKET" --key>
+                            echo "⚠️ Lambda package already exists at
+s3://$S>
+                        else
+			                            echo "📤 Uploading
+Lambda package to S3..."
+                            aws s3 cp lambda/build/ocr_lambda.zip
+s3://$S3_B>
+                        fi
+			                    '''
+					               
+
+        stage('Terraform Init & Apply') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     dir('terraform') {
-                        echo '🚀 Applying Terraform...'
-                        sh 'terraform apply -auto-approve'
+                        echo '🌍 Running Terraform...'
+                        sh '''
+                            source precheck_env.sh || true
+
+                            export TF_VAR_lambda_s3_bucket=$S3_BUCKET
+                            export TF_VAR_lambda_s3_key=$S3_KEY
+                            export TF_VAR_lambda_exists=${TF_VAR_lambda_exists:-false}
+
+                            terraform init
+
+                            # Taint existing IAM-related resources
+                            terraform taint aws_iam_role.ocr_ec2_role || true
+                            terraform taint aws_iam_policy.ocr_s3_policy || true
+                            terraform taint aws_iam_role_policy_attachment.attach_s3_policy_to_ec2 || true
+                            terraform taint aws_iam_instance_profile.ocr_instance_profile || true
+
+                            terraform taint aws_iam_role.ocr_lambda_exec || true
+                            terraform taint aws_iam_policy.ocr_lambda_policy || true
+                            terraform taint aws_iam_role_policy_attachment.attach_lambda_policy || true
+
+                            # Optional (only if created)
+                            # terraform taint aws_lambda_permission.allow_s3_to_invoke || true
+
+                            # Uncomment these if needed and if created before
+                            # terraform taint aws_lambda_function.ocr_lambda || true
+                            terraform taint aws_iam_policy.terraform_lambda_admin_policy || true
+                            terraform taint aws_iam_user_policy_attachment.attach_lambda_admin_to_user || true
+
+                            terraform apply -auto-approve
+                        '''
                     }
                 }
             }
@@ -80,16 +131,18 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     echo '🚀 Running Docker container...'
-                    sh """
+                    sh '''
                         docker rm -f ${CONTAINER_NAME} || true
+                        #docker rmi ${DOCKER_IMAGE}
+                        #docker pull ${DOCKER_IMAGE}
                         docker run -d --name ${CONTAINER_NAME} \
                           -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
                           -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
                           -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
                           -p 5000:5000 ${DOCKER_IMAGE}
-                    """
+                    '''
                 }
             }
         }
